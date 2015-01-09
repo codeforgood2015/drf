@@ -1,6 +1,6 @@
 import tweepy
 
-#Login credentials to use tweepy
+#Login credentials to use tweepy; these are my credentials, but you probably need your own.
 access_token = "220205585-QcUd5fxZNqn3NKuhjVhlUAyyQCFOc3NqUsU2IDtm"
 access_token_secret = "T4GTzbMDztGyxtkXL3YKpcm5e1YOjWUsGQOLS9t0FpkLX"
 consumer_key = "vPQJv4XS3ExYXS7PNN7fYN1EK"
