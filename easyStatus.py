@@ -30,7 +30,7 @@ def mentionCount(status):
 
 #Returns True if the status given is a retweet; False is returned otherwise
 def isRetweet(status):
-    if 'RT '==status.text[0:2]:
+    if 'RT'==status.text[0:2]:
         return True
     else:
         return False
