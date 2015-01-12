@@ -132,7 +132,7 @@ if plainCount==0:
     plainAverage=0
 else:
     plainAverage=plainEngagements/plainCount
-averageEngagements=[plainEngagements/plainCount, photoEngagements/photoCount, 0]
+averageEngagements=[plainAverage, photoAverage, videoAverage]
 media=['Text','Photo','Video']
 
 # Enable inline plotting
