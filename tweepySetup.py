@@ -12,15 +12,26 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 api=tweepy.API(auth)
 
-#This gets all statuses from a profile with the given username and returns them as a list; I find it to be a helpful place to start
-#An improvement that can be made is on how to stop it before the rate limit is reached.
-def getStatuses(username):
+#Gets all statuses, or as many as possible before the rate limit is exceeded
+def getStatuses(username, includeRetweets=False):
     statuses=[]
-    for status in tweepy.Cursor(api.user_timeline, screen_name=username).items():
-        statuses=statuses+[status]
-        if len(statuses)>180:
-            break        
+    canGetTweets=True
+    i=tweepy.Cursor(api.user_timeline, screen_name=username).items()
+    while canGetTweets:
+        try:
+            nextTweet=i.next()
+            if (isRetweet(nextTweet) and includeRetweets) or (isRetweet(nextTweet)==False):
+                statuses=statuses+[nextTweet]
+        except (tweepy.error.TweepError, StopIteration):
+             canGetTweets=False
     return statuses
+    
+#Returns True if the status given is a retweet; False is returned otherwise
+def isRetweet(status):
+    if 'RT'==status.text[0:2]:
+        return True
+    else:
+        return False
 
 #Some attributes of the Status object we can use (Add more if you find more useful ones)
 #text
