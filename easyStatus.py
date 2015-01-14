@@ -1,3 +1,5 @@
+##RODD'S EASY STATUS##
+
 #Returns True if the status given contains a photo; False is returned otherwise
 def hasPhoto(status):
     try:
@@ -51,11 +53,11 @@ class easyStatus:
         else:
             self.video=0
             
-        self.hashtags=hashtagCount(status)
+        self.hashtag_count=hashtagCount(status)
         self.links=linkCount(status)
         self.mentions=mentionCount(status)
         
-        self.retweets=status.retweet_count
+        self.retweet_count=status.retweet_count
         self.favorites=status.favorite_count
 
         if isRetweet(status):
