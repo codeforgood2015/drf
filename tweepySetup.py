@@ -39,3 +39,5 @@ def isRetweet(status):
 #retweet_count
 #favorite_count
 #entities    #This is a dictionary including things like media, urls, hashtags, user_mentions
+
+print getStatuses('hjsong')
