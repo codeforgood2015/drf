@@ -66,6 +66,43 @@ class easyPost:
         self.comments=getComments(post)
         self.shares=getShares(post)
 
+        if self.type=='added_photos':
+            self.photo=1
+        else:
+            self.photo=0
+
+        if self.type=='shared_story':
+            self.sharedStory=1
+        else:
+            self.sharedStory=0
+            
+        if self.type=='added_video':
+            self.video=1
+        else:
+            self.video=0
+
+        if self.type=='photo':
+            self.updatePhoto=1
+        else:
+            self.updatePhoto=0
+
+        if self.type=='mobile_status_update' or self.type=='status_update':
+            self.status=1
+        else:
+            self.status=0
+
+        if hasLink(post):
+            self.link=1
+        else:
+            self.link=0
+            
+        if self.type=='created_note':
+            self.note=1
+        else:
+            self.note=0
+        
+        
+
 #This turns posts into easyPosts
 def geteasyPosts(posts):
     easyPosts=[]
