@@ -136,7 +136,7 @@ averageEngagements=[plainAverage, photoAverage, videoAverage]
 media=['Text','Photo','Video']
 
 # Enable inline plotting
-%matplotlib inline
+#%matplotlib inline
 
 data = averageEngagements
 
