@@ -1,0 +1,3 @@
+dashboard/twitter_applet/daily/
+dashboard/twitter_applet/bokeh.*
+*.pyc
