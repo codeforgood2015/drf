@@ -96,12 +96,12 @@ def get_twitter_data(screen_name):
 
 def get_fb_data(id):
     posts = fbd.getAllEasyPosts(id)
-    df = pd.DataFrame(columns=('time', 'type', 'text', 'likes_count', 'comments_count', 'shares_count', 'hour', 'weekday', 'text_short'), dtype=None)
+    df = pd.DataFrame(columns=('time', 'type', 'text', 'likes_count', 'comments_count', 'shares_count', 'hour', 'weekday'), dtype=None)
     index = len(df)
     
     for post in posts:
         #2015-01-27T13:30:27+0000
-        post_time = datetime.datetime.strptime(post.time, "%Y-%m-%dT%H:%M:%S+0000") - datetime.timedelta(hours=5)   
+        post_time = datetime.datetime.strptime(post.time, "%Y-%m-%dT%H:%M:%S+0000")    
         df.set_value(index, 'type', post.type)
         df.set_value(index, 'text', post.words)
         df.set_value(index, 'likes_count', post.likes)
@@ -114,8 +114,6 @@ def get_fb_data(id):
     df['post_engagement'] = df['likes_count'] + 2 * df['shares_count'] + 3 * df['comments_count']
     df['hour'] = [dt.hour for dt in df['time']]
     df['weekday'] = [dt.weekday() for dt in df['time']]
-    df['text_short'] = df['text'][0:20]+"..."
-
     
     return df
 
@@ -158,7 +156,7 @@ class TwitterApp(VBox):
     engage_plot = Instance(Plot)
     engage_fb_plot = Instance(Plot)
     tweet_text = Instance(PreText)
-    account_text = Instance(PreText)
+    # account_text = Instance(PreText)
     source_twitter = Instance(ColumnDataSource)
     source_fb = Instance(ColumnDataSource)
     # mainrow = Instance(HBox)
@@ -182,8 +180,8 @@ class TwitterApp(VBox):
         obj.make_source()
 
         #outputs
-        obj.tweet_text = PreText(text="", width=1000)
-        obj.account_text = PreText(text="", width=200)
+        obj.tweet_text = PreText(text="", width=1000, height=150)
+        # obj.account_text = PreText(text="", width=200)
         obj.make_plots()
 
         #layout
@@ -210,7 +208,10 @@ class TwitterApp(VBox):
         hover = self.engage_plot.select(dict(type=HoverTool))
 
         hover.tooltips = OrderedDict([
-            ("Hashtags: ", "@hashtags")
+            ("Hashtags: ", "@hashtags"),
+            ("# Favorites: ", "@favorites_count"),
+            ("# Retweets: ", "@retweet_count")
+
         ])
 
     def make_fb_engagement_plot(self):
@@ -227,19 +228,13 @@ class TwitterApp(VBox):
         )
         hover = self.engage_fb_plot.select(dict(type=HoverTool))
 
-        hover.tooltips = OrderedDict([
-            ("Date: ", "@time"),
-            ("Text: ", "@text_short"),
-            ("Likes: ", "@likes_count"),
-            ("Comments: ", "@comments_count"),
-            ("Shares: ", "@shares_count"),
-            ("Engagement Score", "@post_engagement")
-        ])
+        # hover.tooltips = OrderedDict([
+        #     ("Date: ", "@"
+        # ])
 
     def make_stats(self):
         recent_tweets = self.df_twitter[['created_at', 'text', 'retweet_count', 'favorites_count']].sort(columns='created_at', ascending=False)
-        self.tweet_text.text = recent_tweets.head(20).to_string()
-        self.account_text.text = 'DRF was here'
+        self.tweet_text.text = recent_tweets.head(5).to_string()
 
     def make_plots(self):
         print 'make_plots'
@@ -249,7 +244,7 @@ class TwitterApp(VBox):
 
     def set_children(self):
         self.children = [self.top_row, self.row_2, self.row_3]        
-        self.top_row.children = [self.engage_plot, self.account_text]
+        self.top_row.children = [self.engage_plot]
         self.row_2.children = [self.tweet_text]
         self.row_3.children = [self.engage_fb_plot]
     
