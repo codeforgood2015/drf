@@ -96,12 +96,12 @@ def get_twitter_data(screen_name):
 
 def get_fb_data(id):
     posts = fbd.getAllEasyPosts(id)
-    df = pd.DataFrame(columns=('time', 'type', 'text', 'likes_count', 'comments_count', 'shares_count', 'hour', 'weekday'), dtype=None)
+    df = pd.DataFrame(columns=('time', 'type', 'text', 'likes_count', 'comments_count', 'shares_count', 'hour', 'weekday', 'text_short'), dtype=None)
     index = len(df)
     
     for post in posts:
         #2015-01-27T13:30:27+0000
-        post_time = datetime.datetime.strptime(post.time, "%Y-%m-%dT%H:%M:%S+0000")    
+        post_time = datetime.datetime.strptime(post.time, "%Y-%m-%dT%H:%M:%S+0000") - datetime.timedelta(hours=5)   
         df.set_value(index, 'type', post.type)
         df.set_value(index, 'text', post.words)
         df.set_value(index, 'likes_count', post.likes)
@@ -114,6 +114,8 @@ def get_fb_data(id):
     df['post_engagement'] = df['likes_count'] + 2 * df['shares_count'] + 3 * df['comments_count']
     df['hour'] = [dt.hour for dt in df['time']]
     df['weekday'] = [dt.weekday() for dt in df['time']]
+    df['text_short'] = df['text'][0:20]+"..."
+
     
     return df
 
@@ -223,11 +225,16 @@ class TwitterApp(VBox):
             alpha=0.7,
             tools="pan,box_zoom,select,hover,reset"
         )
-        # hover = self.engage_fb_plot.select(dict(type=HoverTool))
+        hover = self.engage_fb_plot.select(dict(type=HoverTool))
 
-        # hover.tooltips = OrderedDict([
-        #     ("Text: ", "@text")
-        # ])
+        hover.tooltips = OrderedDict([
+            ("Date: ", "@time"),
+            ("Text: ", "@text_short"),
+            ("Likes: ", "@likes_count"),
+            ("Comments: ", "@comments_count"),
+            ("Shares: ", "@shares_count"),
+            ("Engagement Score", "@post_engagement")
+        ])
 
     def make_stats(self):
         recent_tweets = self.df_twitter[['created_at', 'text', 'retweet_count', 'favorites_count']].sort(columns='created_at', ascending=False)
