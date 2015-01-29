@@ -2,6 +2,11 @@ import datetime
 import numpy as np
 import pandas as pd
 import tweepy
+from facepy import GraphAPI
+import facepy
+import datetime
+import facebookData as fbd
+
 
 from bokeh.plotting import circle, rect, line
 from bokeh.models import Plot, ColumnDataSource, HoverTool
@@ -13,19 +18,14 @@ from collections import OrderedDict
 
 ####################### User Inputs #######################
 # DRF's Keys
-# CONSUMER_KEY = "rdCgZmY5utBp0YR7wol0ItBWX"
-# CONSUMER_SECRET = "GUZQKHhH6Oej6RpRnkISyWFid8rLZREYxqM8avMYtJsH575aTc"
-# OAUTH_TOKEN = "1347715296-651If19TfpqIFQCt1bHnwSHWjhCqzRZCQMd7iKH"
-# OAUTH_TOKEN_SECRET = "HRoXpMnbuFmhPNTqzMcaAVAKm74I0s5q7UoxJIVk2p3fb"
+CONSUMER_KEY = "rdCgZmY5utBp0YR7wol0ItBWX"
+CONSUMER_SECRET = "GUZQKHhH6Oej6RpRnkISyWFid8rLZREYxqM8avMYtJsH575aTc"
+OAUTH_TOKEN = "1347715296-651If19TfpqIFQCt1bHnwSHWjhCqzRZCQMd7iKH"
+OAUTH_TOKEN_SECRET = "HRoXpMnbuFmhPNTqzMcaAVAKm74I0s5q7UoxJIVk2p3fb"
 
-# bxie's keys. TODO: Remove
-CONSUMER_KEY = "yAPyRt7nnRs2G6tOqoqcr7oB9"
-CONSUMER_SECRET = "6aIhMz7Sra7yFcGIjEcOGyxBubGrGwsBsLPVsimllN4sGrm4vg"
-OAUTH_TOKEN = "388988407-y17QJCOtpyGxcRpFvuPjQ9ImWDwDAeFKNUz0p87B"
-OAUTH_TOKEN_SECRET = "GCsIJMgjy2RLcLWeT1RN40rw6fZU5jfNN4ju3qZkRHKxn"
 
 SCREEN_NAME = "disabrightsfund"
-
+FB_ID = "182413241850729"
 ####################### Getting Data #######################
 def run_tweepy():
     auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
@@ -33,11 +33,20 @@ def run_tweepy():
     api = tweepy.API(auth)
     return api
 
+#Don't need to call b/c facepy handled in facebookData
+def run_facepy():
+    #Makes auth calls (takes time)
+    oauth_access_token = facepy.utils.get_application_access_token(APP_ID, APP_SECRET)
+
+    #This just gets access
+    graph = GraphAPI(oauth_access_token)
+    return graph
+
 api = run_tweepy()
 
 #Given a twitter screen_name (user name), as string,
 #get dataframe of twitter data
-def get_data(screen_name):
+def get_twitter_data(screen_name):
     df = pd.DataFrame(columns=('created_at', 'id', 'text', 'hashtag_count', 'retweet_count', 
                                'retweeted', 'favorites_count', 'has_photo'), dtype=None)
     
@@ -85,6 +94,29 @@ def get_data(screen_name):
     
     return df
 
+def get_fb_data(id):
+    posts = fbd.getAllEasyPosts(id)
+    df = pd.DataFrame(columns=('time', 'type', 'text', 'likes_count', 'comments_count', 'shares_count', 'hour', 'weekday'), dtype=None)
+    index = len(df)
+    
+    for post in posts:
+        #2015-01-27T13:30:27+0000
+        post_time = datetime.datetime.strptime(post.time, "%Y-%m-%dT%H:%M:%S+0000")    
+        df.set_value(index, 'type', post.type)
+        df.set_value(index, 'text', post.words)
+        df.set_value(index, 'likes_count', post.likes)
+        df.set_value(index, 'shares_count', post.shares)
+        df.set_value(index, 'comments_count', post.comments)
+        df.set_value(index, 'time', post_time)
+        
+        index+=1
+    
+    df['post_engagement'] = df['likes_count'] + 2 * df['shares_count'] + 3 * df['comments_count']
+    df['hour'] = [dt.hour for dt in df['time']]
+    df['weekday'] = [dt.weekday() for dt in df['time']]
+    
+    return df
+
 #Given data (as dataframe) and time_step (string: 'weekday', 'hour', month')
 def plot_engagement(data, time_step):
     accepted_steps = ('month', 'weekday', 'hour')
@@ -119,11 +151,14 @@ class TwitterApp(VBox):
     
     top_row = Instance(HBox) #contains engage_plot, tweet_info
     row_2 = Instance(HBox)
+    row_3 = Instance(HBox)
 
     engage_plot = Instance(Plot)
+    engage_fb_plot = Instance(Plot)
     tweet_text = Instance(PreText)
     account_text = Instance(PreText)
-    source = Instance(ColumnDataSource)
+    source_twitter = Instance(ColumnDataSource)
+    source_fb = Instance(ColumnDataSource)
     # mainrow = Instance(HBox)
     
     def __init__(self, *args, **kwargs):
@@ -140,6 +175,7 @@ class TwitterApp(VBox):
         obj = cls()
         obj.top_row = HBox()
         obj.row_2 = HBox()
+        obj.row_3 = HBox()
 
         obj.make_source()
 
@@ -154,17 +190,18 @@ class TwitterApp(VBox):
 
     def make_source(self):
     	print 'make source'
-        self.source = ColumnDataSource(data=self.df)
-    
+        self.source_twitter = ColumnDataSource(data=self.df_twitter)
+        self.source_fb = ColumnDataSource(data=self.df_fb)
+
     def make_engagement_plot(self):
         print 'make_engagement'
         self.engage_plot = circle(
             'created_at', 'tweet_engagement',
-            title="Engagement by Day",
-            source = self.source,
+            title="Twitter Engagement by Tweet",
+            source = self.source_twitter,
             plot_width=800, plot_height=400,
             x_axis_type='datetime',
-            size = 15,
+            size = 10,
             alpha = 0.7,
             tools="pan,box_zoom,select,hover,reset"
         )
@@ -174,29 +211,52 @@ class TwitterApp(VBox):
             ("Hashtags: ", "@hashtags")
         ])
 
+    def make_fb_engagement_plot(self):
+        print 'make fb engagement'
+        self.engage_fb_plot = circle(
+            'time', 'post_engagement',
+            title = "Facebook Engagement by Post",
+            source = self.source_fb,
+            plot_width=800, plot_height=400,
+            x_axis_type='datetime',
+            size=15,
+            alpha=0.7,
+            tools="pan,box_zoom,select,hover,reset"
+        )
+        # hover = self.engage_fb_plot.select(dict(type=HoverTool))
+
+        # hover.tooltips = OrderedDict([
+        #     ("Text: ", "@text")
+        # ])
+
     def make_stats(self):
-        recent_tweets = self.df[['created_at', 'text', 'retweet_count', 'favorites_count']].sort(columns='created_at', ascending=False)
-        self.tweet_text.text = recent_tweets.head(3).to_string()
+        recent_tweets = self.df_twitter[['created_at', 'text', 'retweet_count', 'favorites_count']].sort(columns='created_at', ascending=False)
+        self.tweet_text.text = recent_tweets.head(20).to_string()
         self.account_text.text = 'DRF was here'
 
     def make_plots(self):
         print 'make_plots'
         self.make_engagement_plot()
+        self.make_fb_engagement_plot()
         self.make_stats()
 
     def set_children(self):
-        self.children = [self.top_row, self.row_2]        
+        self.children = [self.top_row, self.row_2, self.row_3]        
         self.top_row.children = [self.engage_plot, self.account_text]
         self.row_2.children = [self.tweet_text]
+        self.row_3.children = [self.engage_fb_plot]
     
     @property
-    def df(self):
-    	print 'df'
-        df = get_data(SCREEN_NAME)
-        print df.head(3)
-        print
-        return df
-        # return df[['created_at', 'retweets_count']]
+    def df_twitter(self):
+    	print 'df_twitter'
+        df_twitter = get_twitter_data(SCREEN_NAME)
+        return df_twitter
+    
+    @property
+    def df_fb(self):
+        print 'df_fb'
+        df_fb = get_fb_data(FB_ID)
+        return df_fb
 
 @bokeh_app.route("/bokeh/twitter/")
 @object_page("twitter")
