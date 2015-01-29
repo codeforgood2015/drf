@@ -21,13 +21,13 @@ from pandas import DataFrame, Series
 #consumer_secret = "GUZQKHhH6Oej6RpRnkISyWFid8rLZREYxqM8avMYtJsH575aTc"
 
 
-##If the rate is exceeded, alternate with the below keys.
+###If the rate is exceeded, alternate with the below keys.
 access_token = "2233842882-Q7gMjff1xDrSkJCFl8p27vqM8Vid1pSFEGekkO9"
 access_token_secret = "Gbi7D04wxwD95dcjynbQqDOnAFbgSb8RqVhPvXbzGv2xc"
 consumer_key = "5y1IFTVt5L4NaQrsmZuplj1je"
 consumer_secret = "kiRGUe7p535v0mD3yiLTJHKkO7QmM9OBVWNRwDI4ZvPnkXMyy4"
 
-##Third tokens
+#Third tokens
 #consumer_secret = "3oxUYDpxtSctph7pg2WBlpkHHeREBJvfpuYCs57MZBJwNraddD"
 #access_token = "2233842882-47QJOE6KkJQjyvxf5EwGvnUZ1eYROLWZmyWqWJX"
 #access_token_secret = "OkpI7OG7bCocqSbCWQBcCNDCa3Zb0AfP5CBfVzB0nYHfq"
@@ -59,8 +59,21 @@ def isRetweet(status):
 def isReply(status):
     return status.text.startswith('@') or status.text.startswith('.@')
 
-#Extract only the data we are interested in.
+def filterWordDict():
+    """Removes meaningless words, stopwords, punctuations, '@username',
+    etc
+    """
+    pass
+def createDF():
+    """
+    """
+    pass
 
+def topN(df):
+    """
+    Returns a new dataframe sorted by the 
+    """
+    pass
 def getWordFreq(screen_name, n = 20):
     """Counts the word frequency in the top n most 'engaging' (i.e. attractive 
     to retweets and favorites) tweets and returns a bar graph of the result.
@@ -68,7 +81,6 @@ def getWordFreq(screen_name, n = 20):
 
     statuses = getStatuses(screen_name)
     
-    hasVideos = []
     texts = []
     isRetweets = []
     isReplys=[]
@@ -125,7 +137,7 @@ def getWordFreq(screen_name, n = 20):
     #talked about.
     tokens = []
     for text in df_topN[['text']].values:
-        text = map(str,text)[0]
+        text = map(lambda x: x.encode('utf-8'),text)[0]
         wList = text.split()
         filtered = []
         for w in wList:
@@ -137,7 +149,8 @@ def getWordFreq(screen_name, n = 20):
     tokens_counter = Counter(tokens)
     
     #Display some of the most commonly occurring tokens
-    tokens_counter.most_common(15)
+    print tokens_counter.most_common(15)
+    
     
     #Remove stopwords to decrease noise
     for t in nltk.corpus.stopwords.words('english'):
@@ -156,6 +169,8 @@ def getWordFreq(screen_name, n = 20):
         freqs.append(f)
     word_freq = Series(freqs, words)
     word_freq.plot(kind = 'barh', title = screen_name)
+    return word_freq
+
 
 ##First look at tweet entities: what are the most frequent tweet entity?
 #entities = Counter()
@@ -202,7 +217,7 @@ def getWordFreq(screen_name, n = 20):
 #screen_name = "gatesfoundation"
 #screen_name = "Pontifex"  #Pope Francis
 #screen_name = "nytimes"
-screen_name = "BarackObama"
+#screen_name = "BarackObama"
 #myStatuses = getStatuses('breathsong')
 #nList = ["HI_UnitedStates", "InclusionIntl", "DisabRightsFund", "unicefusa", "gatesfoundation"]
-getWordFreq(screen_name, n = 50)
+#getWordFreq(screen_name, n = 50)
